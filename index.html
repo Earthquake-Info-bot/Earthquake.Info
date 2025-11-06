@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>震度マップ（スプシ＋K列対応 完全版）</title>
+  <title>震度マップ（札幌テスト用）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,10 +13,10 @@
       justify-content:center;
       align-items:center;
       border-radius:50%;
-      width:24px;
-      height:24px;
+      width:32px;
+      height:32px;
       font-weight:bold;
-      font-size:12px;
+      font-size:14px;
       border:2px solid rgba(0,0,0,0.2);
       box-sizing:border-box;
       pointer-events:none;
@@ -24,51 +24,68 @@
   </style>
 </head>
 <body>
-  <div id="map"></div>
-  <script>
-    const map = L.map("map").setView([43.06,141.35],7); // 北海道中心
+<div id="map"></div>
+<script>
+const map = L.map("map").setView([43.06,141.35],10);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; CARTO',
-      subdomains:'abcd',
-      maxZoom:19
-    }).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; CARTO',
+  subdomains:'abcd',
+  maxZoom:19
+}).addTo(map);
 
-    const colors = {
-      "1":"rgb(242,242,255)","2":"rgb(0,170,255)","3":"rgb(0,65,255)",
-      "4":"rgb(250,230,150)","5-":"rgb(255,230,0)","5+":"rgb(255,200,0)",
-      "6-":"rgb(255,40,0)","6+":"rgb(165,0,33)","7":"rgb(180,0,104)"
-    };
+const colors = {
+  "1":"rgb(242,242,255)","2":"rgb(0,170,255)","3":"rgb(0,65,255)",
+  "4":"rgb(250,230,150)","5-":"rgb(255,230,0)","5+":"rgb(255,200,0)",
+  "6-":"rgb(255,40,0)","6+":"rgb(165,0,33)","7":"rgb(180,0,104)"
+};
 
-    const intensityOrder = {"1":1,"2":2,"3":3,"4":4,"5-":5,"5+":6,"6-":7,"6+":8,"7":9};
+const intensityOrder = {"1":1,"2":2,"3":3,"4":4,"5-":5,"5+":6,"6-":7,"6+":8,"7":9};
 
-    function getTextColor(rgb){
-      const [r,g,b] = rgb.match(/\d+/g).map(Number);
-      return (r*299 + g*587 + b*114)/1000 > 128 ? "black" : "white";
-    }
+// 背景色に応じて文字色決定
+function getTextColor(rgb){
+  const [r,g,b] = rgb.match(/\d+/g).map(Number);
+  return (r*299 + g*587 + b*114)/1000 > 128 ? "black" : "white";
+}
 
-    function addIntensityMarker(lat,lon,intensity){
-      if(!lat || !lon || !intensity) return; // 空値スキップ
-      intensity = String(intensity); // 型統一
-      const color = colors[intensity] || "gray";
-      const textColor = getTextColor(color);
-      const icon = L.divIcon({
-        className:'',
-        html:`<div class="intensity-marker" style="background:${color};color:${textColor}">${intensity}</div>`,
-        iconSize:[24,24],
-        iconAnchor:[12,12]
-      });
-      L.marker([Number(lat), Number(lon)],{icon,interactive:false,zIndexOffset:(intensityOrder[intensity]||0)*1000}).addTo(map);
-    }
+// マーカー追加
+function addIntensityMarker(lat, lon, intensity){
+  const color = colors[intensity] || "gray";
+  const textColor = getTextColor(color);
+  const icon = L.divIcon({
+    className:'',
+    html:`<div class="intensity-marker" style="background:${color};color:${textColor}">${intensity}</div>`,
+    iconSize:[32,32],
+    iconAnchor:[16,16]
+  });
+  L.marker([lat,lon],{icon,interactive:false,zIndexOffset:(intensityOrder[intensity]||0)*1000}).addTo(map);
+}
 
-    // GAS から座標＋震度取得
-    fetch("https://script.google.com/macros/s/あなたのデプロイURL/exec") // ←自分のURLに置き換え
-      .then(res => res.json())
-      .then(data => {
-        console.log(data); // 取得データ確認
-        data.forEach(p => addIntensityMarker(p.lat,p.lon,p.intensity));
-      })
-      .catch(err => console.error("Fetch error:", err));
-  </script>
+// サンプル札幌周辺テストデータ
+const testData = [
+  {lat:43.06, lon:141.35, intensity:"3"},
+  {lat:43.05, lon:141.34, intensity:"6-"},
+  {lat:43.14, lon:141.35, intensity:"2"},
+  {lat:43.14, lon:141.36, intensity:"7"},
+  {lat:43.17, lon:141.32, intensity:"7"},
+  {lat:43.22, lon:141.52, intensity:"6+"},
+  {lat:43.23, lon:141.65, intensity:"5+"},
+  {lat:43.28, lon:141.42, intensity:"4"},
+  {lat:43.4,  lon:141.43, intensity:"3"}
+];
+
+// マーカー追加
+testData.forEach(p=>{
+  const lat = Number(p.lat);
+  const lon = Number(p.lon);
+  const intensity = String(p.intensity);
+  if(!lat || !lon || !intensity) return;
+  addIntensityMarker(lat,lon,intensity);
+});
+
+// 画面内に全マーカー収まるように自動ズーム
+const bounds = testData.map(p=>[Number(p.lat), Number(p.lon)]);
+map.fitBounds(bounds);
+</script>
 </body>
 </html>
