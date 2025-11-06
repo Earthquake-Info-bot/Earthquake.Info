@@ -1,37 +1,40 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<title>地震情報マップ</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-  html, body, #map { height:100%; margin:0; padding:0; }
-  .intensity-marker {
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    border-radius:50%;
-    width:32px;
-    height:32px;
-    font-weight:bold;
-    font-size:14px;
-    border:2px solid rgba(0,0,0,0.2);
-    box-sizing:border-box;
-    pointer-events:none;
-  }
-</style>
+  <meta charset="utf-8">
+  <title>地震情報マップ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map { height:100%; margin:0; padding:0; }
+    .intensity-marker {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      border-radius:50%;
+      width:24px;
+      height:24px;
+      font-weight:bold;
+      font-size:12px;
+      border:2px solid rgba(0,0,0,0.2);
+      box-sizing:border-box;
+      pointer-events:none;
+    }
+  </style>
 </head>
 <body>
 <div id="map"></div>
 <script>
-const map = L.map("map").setView([36,138],5);
+const map = L.map("map").setView([35.6812,139.7671],6);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; CARTO', subdomains:'abcd', maxZoom:19
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; CARTO',
+  subdomains:'abcd',
+  maxZoom:19
 }).addTo(map);
 
+// 震度カラーと表示順
 const colors = {
   "1":"rgb(242,242,255)","2":"rgb(0,170,255)","3":"rgb(0,65,255)",
   "4":"rgb(250,230,150)","5-":"rgb(255,230,0)","5+":"rgb(255,200,0)",
@@ -45,44 +48,58 @@ function getTextColor(rgb){
   return (r*299 + g*587 + b*114)/1000 > 128 ? "black" : "white";
 }
 
-// マーカー管理
-let markers = [];
-function clearMarkers(){ markers.forEach(m=>map.removeLayer(m)); markers=[]; }
-
+// マーカー追加
 function addIntensityMarker(lat, lon, intensity){
   const color = colors[intensity] || "gray";
   const textColor = getTextColor(color);
   const icon = L.divIcon({
     className:'',
     html:`<div class="intensity-marker" style="background:${color};color:${textColor}">${intensity}</div>`,
-    iconSize:[32,32],
-    iconAnchor:[16,16]
+    iconSize:[24,24],
+    iconAnchor:[12,12]
   });
-  const marker = L.marker([lat,lon],{
-    icon,
-    interactive:false,
-    zIndexOffset:(intensityOrder[intensity]||0)*1000
-  }).addTo(map);
-  markers.push(marker);
+  L.marker([lat, lon], {icon, interactive:false, zIndexOffset:(intensityOrder[intensity]||0)*1000}).addTo(map);
 }
 
+// マーカー更新（既存マーカー削除して再描画）
+let markers = [];
 function updateMarkers(data){
-  clearMarkers();
-  data.forEach(p=>{
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  data.forEach(p => {
     const lat = Number(p.lat);
     const lon = Number(p.lon);
     const intensity = String(p.intensity);
     if(!lat || !lon || !intensity) return;
-    addIntensityMarker(lat,lon,intensity);
+    const marker = addIntensityMarker(lat, lon, intensity);
+    markers.push(marker);
   });
-  const bounds = data.map(p=>[Number(p.lat), Number(p.lon)]);
-  if(bounds.length>0) map.fitBounds(bounds);
+  // 画面内に全マーカー収まるようにズーム
+  const bounds = data.map(p => [Number(p.lat), Number(p.lon)]);
+  if(bounds.length) map.fitBounds(bounds);
 }
 
-// GAS のデプロイ URL に置き換える
-fetch("https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhrt9_vJYQe98rLqshIrTG8g3hiuc6dcyknFhKonkMJN7j5umnLmyLjosg_fgiDZI112ocKswCtWqaQnb3CMrbiXaz5-pRoDT9j0YQZNtAm5E7w-2PShH6PdHY5LsddH3h5J6s4sfqEa2SvcsA37vE_rvKatM_kZDrqnvZuwHJCPl0R2YJSoc9Q7wlqErVD0b2OlrqotdeLAyavF3pAWpX6zX60pnIWMy0ai01EnSv6w2wKVEs9OP7VC9MkLtwPr6g479rL0xTDo2Cg16keSzlZckUfrDp_rC-gr3FI&lib=Mf5rsCSNvJKLq9bzgklzDgRhmz1QfjaVA")
-  .then(res=>res.json())
-  .then(data=>updateMarkers(data));
+// GAS JSON を fetch（キャッシュ回避付き）
+function fetchData(){
+  const url = "https://script.google.com/macros/s/あなたのデプロイURL/exec?ts=" + new Date().getTime();
+  fetch(url)
+    .then(res => res.json())
+    .then(data => updateMarkers(data))
+    .catch(err => console.error("JSON fetch error:", err));
+}
+
+// 初回取得
+fetchData();
+
+// 任意で更新ボタン作る場合
+const btn = document.createElement("button");
+btn.textContent = "最新データ更新";
+btn.style.position = "absolute";
+btn.style.top = "10px";
+btn.style.right = "10px";
+btn.style.zIndex = 1000;
+btn.onclick = fetchData;
+document.body.appendChild(btn);
 </script>
 </body>
 </html>
