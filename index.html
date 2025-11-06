@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>震度マップ（テスト）</title>
+  <title>震度マップ（スプシ＋K列対応 完全版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -26,7 +26,7 @@
 <body>
   <div id="map"></div>
   <script>
-    const map = L.map("map").setView([35.6812,139.7671],6);
+    const map = L.map("map").setView([43.06,141.35],7); // 北海道中心
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; CARTO',
@@ -48,6 +48,8 @@
     }
 
     function addIntensityMarker(lat,lon,intensity){
+      if(!lat || !lon || !intensity) return; // 空値スキップ
+      intensity = String(intensity); // 型統一
       const color = colors[intensity] || "gray";
       const textColor = getTextColor(color);
       const icon = L.divIcon({
@@ -56,15 +58,17 @@
         iconSize:[24,24],
         iconAnchor:[12,12]
       });
-      L.marker([lat,lon],{icon,interactive:false,zIndexOffset:intensityOrder[intensity]*1000}).addTo(map);
+      L.marker([Number(lat), Number(lon)],{icon,interactive:false,zIndexOffset:(intensityOrder[intensity]||0)*1000}).addTo(map);
     }
 
     // GAS から座標＋震度取得
-    fetch("https://script.google.com/macros/s/AKfycbwaBGjmKPWnGIfjrVtkQJ4mZXrtzIPs46JYDGNB_K-cg3pSGjj3BojKT7a6IkII_xPrYA/exec") // ←ここを自分のデプロイURLに置き換え
+    fetch("https://script.google.com/macros/s/あなたのデプロイURL/exec") // ←自分のURLに置き換え
       .then(res => res.json())
       .then(data => {
+        console.log(data); // 取得データ確認
         data.forEach(p => addIntensityMarker(p.lat,p.lon,p.intensity));
-      });
+      })
+      .catch(err => console.error("Fetch error:", err));
   </script>
 </body>
 </html>
