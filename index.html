@@ -81,7 +81,7 @@ function updateMarkers(data){
 
 // GAS JSON を fetch（キャッシュ回避付き）
 function fetchData(){
-  const url = "https://script.google.com/macros/s/AKfycbxaT7St_7evQxMRPh7UCbtzC1kTQO-0FOATXfFRNLoA4mLgUSaD1txa9EdRyWx_-vMF/exec" + new Date().getTime();
+  const url = "https://script.google.com/macros/s/AKfycbxaT7St_7evQxMRPh7UCbtzC1kTQO-0FOATXfFRNLoA4mLgUSaD1txa9EdRyWx_-vMF/exec?ts=" + new Date().getTime();
   fetch(url)
     .then(res => res.json())
     .then(data => updateMarkers(data))
