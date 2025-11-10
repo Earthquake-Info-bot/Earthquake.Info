@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>地震情報マップ</title>
+  <title>地震速報マップ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -34,15 +34,14 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   maxZoom:19
 }).addTo(map);
 
-// 震度カラーと表示順
+// 震度カラー
 const colors = {
   "1":"rgb(242,242,255)","2":"rgb(0,170,255)","3":"rgb(0,65,255)",
   "4":"rgb(250,230,150)","5-":"rgb(255,230,0)","5+":"rgb(255,200,0)",
   "6-":"rgb(255,40,0)","6+":"rgb(165,0,33)","7":"rgb(180,0,104)"
 };
-const intensityOrder = {"1":1,"2":2,"3":3,"4":4,"5-":5,"5+":6,"6-":7,"6+":8,"7":9};
 
-// 背景色に応じて文字色決定
+// 背景色に応じて文字色
 function getTextColor(rgb){
   const [r,g,b] = rgb.match(/\d+/g).map(Number);
   return (r*299 + g*587 + b*114)/1000 > 128 ? "black" : "white";
@@ -58,10 +57,10 @@ function addIntensityMarker(lat, lon, intensity){
     iconSize:[24,24],
     iconAnchor:[12,12]
   });
-  L.marker([lat, lon], {icon, interactive:false, zIndexOffset:(intensityOrder[intensity]||0)*1000}).addTo(map);
+  L.marker([lat, lon], {icon, interactive:false}).addTo(map);
 }
 
-// マーカー更新（既存マーカー削除して再描画）
+// マーカー更新
 let markers = [];
 function updateMarkers(data){
   markers.forEach(m => map.removeLayer(m));
@@ -71,17 +70,13 @@ function updateMarkers(data){
     const lon = Number(p.lon);
     const intensity = String(p.intensity);
     if(!lat || !lon || !intensity) return;
-    const marker = addIntensityMarker(lat, lon, intensity);
-    markers.push(marker);
+    addIntensityMarker(lat, lon, intensity);
   });
-  // 画面内に全マーカー収まるようにズーム
-  const bounds = data.map(p => [Number(p.lat), Number(p.lon)]);
-  if(bounds.length) map.fitBounds(bounds);
 }
 
-// GAS JSON を fetch（キャッシュ回避付き）
+// API fetch
 function fetchData(){
-  const url = "https://script.google.com/macros/s/AKfycbwY2yBJ-EBmPfx4JNFYzaYpLWEqean7oGHI03dUFp65xE5fYVXYaN0jfVc52ra29i7R/exec?ts=" + new Date().getTime();
+  const url = "ここに震度速報APIのURLを入れる" + "?ts=" + new Date().getTime();
   fetch(url)
     .then(res => res.json())
     .then(data => updateMarkers(data))
@@ -91,7 +86,7 @@ function fetchData(){
 // 初回取得
 fetchData();
 
-// 任意で更新ボタン作る場合
+// 更新ボタン
 const btn = document.createElement("button");
 btn.textContent = "最新データ更新";
 btn.style.position = "absolute";
