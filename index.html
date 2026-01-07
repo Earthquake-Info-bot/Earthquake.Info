@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>地震情報ビューアーv1.3.2</title>
+<title>地震情報ビューアーv1.3.3</title>
 <style>
 body {
   font-family:"Yu Gothic","YuGothic","メイリオ",sans-serif;
@@ -84,6 +84,7 @@ function compareScale(a,b){const order={'1':10,'2':20,'3':30,'4':40,'5弱':45,'5
 
 // ★★★ buildAreaText をあなたの仕様に完全置き換え ★★★
 function buildAreaText(points) {
+  let chiiki = "0";
   if (!points || points.length === 0) return "▽震度情報不明\n";
   const cityMaxScale = {};
   const specialCities = ["市川市","市原市","野々市市","四日市市","田村市","町田市","十日町市","大町市",
@@ -92,8 +93,10 @@ function buildAreaText(points) {
 
   points.forEach(p => {
     if (p.isArea) {
+      chiiki = "1";
       const scale = scaleToText(p.scale);
-      const city = p.addr;
+      const addr = p.addr; // 例: "鳥取県西部" や "東京都千代田区"
+      const city = addr.replace(/^(.*?[都道府県])/, '');
       const key = `${p.pref}:${city}`;
       if (!cityMaxScale[key] || compareScale(scale, cityMaxScale[key]) > 0) {
         cityMaxScale[key] = scale;
@@ -146,8 +149,13 @@ function buildAreaText(points) {
     text += `\n▽震度${scale}\n`;
     prefOrder.forEach(pref=>{
       if(grouped[scale][pref]){
-        const cities = grouped[scale][pref].sort().join("　");
-        text += `【${pref}】\n${cities}\n`;
+        if (chiiki==="1") {
+          const cities = grouped[scale][pref].sort().join(" ");
+          text += `【${pref}】${cities}\n`;
+        } else {
+          const cities = grouped[scale][pref].sort().join("　");
+          text += `【${pref}】\n${cities}\n`;
+        }
       }
     });
   });
@@ -207,7 +215,7 @@ ${intensityInfo}
 
 // updateEQ
 async function updateEQ(){
-  const url = "https://api.p2pquake.net/v2/history?codes=551&limit=1";
+  const url = "https://api.p2pquake.net/v2/history?codes=551&limit=1&offset";
   try{
     const response = await fetch(url);
     if(!response.ok) throw new Error(`APIアクセスエラー: ${response.status}`);
