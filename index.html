@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>地震情報ビューアーv1.3.3</title>
+<title>地震情報ビューアーv1.3.4</title>
 <style>
 body {
   font-family:"Yu Gothic","YuGothic","メイリオ",sans-serif;
@@ -63,17 +63,34 @@ function depthToText(depth){
   if(depth===0) return "ごく浅い";
   return depth+"km";
 }
-function buildTsunamiText(domestic, foreign){
-  const d = domestic||"Unknown";
-  const f = foreign||"";
-  if(d==="Warning"||d==="Watch") return "津波に関する情報を発表しています。";
-  if(d==="NonEffective") return "津波予報(若干の海面変動)を発表していますが、被害の心配はありません。";
-  if(d==="None"){
-    if(f==="Warning"||f==="Watch"||f==="WarningNearby") return "この地震による国内での津波の心配はありません。";
-    return "この地震による津波の心配はありません。";
+function buildTsunamiText(domestic, foreign) {
+  const d = domestic;
+  const f = foreign;
+  if (d==="Warning" || d==="Watch") return "津波に関する情報を発表しています。";
+  if (d==="NonEffective") return "津波予報(若干の海面変動)を発表していますが、被害の心配はありません。";
+  if (d==="None") {
+    if (f==="Checking") {
+      return "この地震による国内での津波の心配はありません。海外での津波の有無は調査中です。";
+    } else if (f==="NonEffectiveNearby") {
+      return "この地震による国内での津波の心配はありませんが、震源の近傍で小さな津波の可能性があります。";
+    } else if (f==="WarningNearby") {
+      return "この地震による国内での津波の心配はありませんが、震源の近傍で津波の可能性があります。";
+    } else if (f==="WarningPacific") {
+      return "この地震による国内での津波の心配はありませんが、太平洋で津波の可能性があります。";
+    } else if (f==="WarningPacificWide") {
+      return "この地震による国内での津波の心配はありませんが、太平洋の広域で津波の可能性があります。";
+    } else if (f==="WarningIndian") {
+      return "この地震による国内での津波の心配はありませんが、インド洋で津波の可能性があります。";
+    } else if (f==="WarningIndianWide") {
+      return "この地震による国内での津波の心配はありませんが、インド洋の広域で津波の可能性があります。";
+    } else if (f==="Potential") {
+      return "この地震による国内での津波の心配はありません。海外では津波が発生する可能性がありますが、詳細は不明です。";
+    } else {
+      return "この地震による津波の心配はありません。";
+    }
   }
-  if(d==="Checking") return "この地震による津波の有無を現在調査中です。";
-  if(d==="Unknown") return "この地震による津波の有無は不明です。";
+  if (d==="Checking") return "この地震による津波の有無を現在調査中です。";
+  if (d==="Unknown") return "この地震による津波の有無は不明です。";
   return "#Tsunami:Error!";
 }
 function intensityDescription(scale){
@@ -185,19 +202,24 @@ ${formatDate(new Date(eq.time),"HH時mm分")}頃、${intensityDescription(maxSca
 ${tsunamiText}${commentText}
 
 　●各地の震度情報●
-${intensityInfo}
-
-出典：P2P地震情報API(気象庁)`;
+${intensityInfo}`;
     case "Destination":
       return `《震源速報》
 ${formatDate(new Date(eq.time),"HH時mm分")}頃、${place}で地震がありました。
 　M${magnitude}
 　震源の深さ:${depth}
+${tsunamiText}${commentText}`;
+    case "Foreign":
+      return `《遠地地震情報》
+${formatDate(new Date(eq.time),"yyyy年MM月dd日HH時mm分")}頃、${place}で地震がありました。
+　最大震度:${maxScale}
+　M${magnitude}
+　震源の深さ:${depth}
 ${tsunamiText}${commentText}
 
-出典：P2P地震情報API(気象庁)`;
+　●各地の震度情報●
+${intensityInfo}`;
     case "DetailScale":
-    case "Foreign":
     default:
       return `《地震情報》
 ${formatDate(new Date(eq.time),"yyyy年MM月dd日HH時mm分")}頃、${place}で地震がありました。
@@ -207,9 +229,7 @@ ${formatDate(new Date(eq.time),"yyyy年MM月dd日HH時mm分")}頃、${place}で�
 ${tsunamiText}${commentText}
 
 　●各地の震度情報●
-${intensityInfo}
-
-出典：P2P地震情報API(気象庁)`;
+${intensityInfo}`;
   }
 }
 
